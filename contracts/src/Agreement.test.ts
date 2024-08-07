@@ -1,38 +1,43 @@
-import { AccountUpdate, Field, Mina, PrivateKey, PublicKey } from 'o1js';
-import { Add } from './Add';
+import { AccountUpdate, Field, Mina, PrivateKey, PublicKey, CircuitString } from 'o1js';
+import { RevokableAgreement } from './Agreement';
 
 /*
- * This file specifies how to test the `Add` example smart contract. It is safe to delete this file and replace
- * with your own tests.
+ * This file specifies how to test the `Agreement` smart contract.
  *
  * See https://docs.minaprotocol.com/zkapps for more info.
  */
 
 let proofsEnabled = false;
 
-describe('Add', () => {
+describe('Agreement', () => {
   let deployerAccount: Mina.TestPublicKey,
     deployerKey: PrivateKey,
     senderAccount: Mina.TestPublicKey,
     senderKey: PrivateKey,
+    claimantAccount: Mina.TestPublicKey,
+    claimantKey: PrivateKey,
+    signerAccount: Mina.TestPublicKey,
+    signerKey: PrivateKey,
     zkAppAddress: PublicKey,
     zkAppPrivateKey: PrivateKey,
-    zkApp: Add;
+    zkApp: RevokableAgreement;
 
   beforeAll(async () => {
-    if (proofsEnabled) await Add.compile();
+    if (proofsEnabled) await RevokableAgreement.compile();
   });
 
   beforeEach(async () => {
     const Local = await Mina.LocalBlockchain({ proofsEnabled });
     Mina.setActiveInstance(Local);
-    [deployerAccount, senderAccount] = Local.testAccounts;
+    [deployerAccount, senderAccount, claimantAccount, signerAccount] = Local.testAccounts;
     deployerKey = deployerAccount.key;
     senderKey = senderAccount.key;
+    claimantKey = claimantAccount.key;
+    signerKey = signerAccount.key;
 
     zkAppPrivateKey = PrivateKey.random();
     zkAppAddress = zkAppPrivateKey.toPublicKey();
-    zkApp = new Add(zkAppAddress);
+    zkApp = new RevokableAgreement(zkAppAddress, claimantAccount, signerAccount, CircuitString.fromString("This statement is false."));
   });
 
   async function localDeploy() {
@@ -45,7 +50,7 @@ describe('Add', () => {
     await txn.sign([deployerKey, zkAppPrivateKey]).send();
   }
 
-  it('generates and deploys the `Add` smart contract', async () => {
+  it('generates and deploys the `RevokableAgreement` smart contract', async () => {
     await localDeploy();
     const num = zkApp.num.get();
     expect(num).toEqual(Field(1));

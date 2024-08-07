@@ -1,3 +1,3 @@
-import { Add } from './Add.js';
+import { RevokableAgreement } from './Agreement.js';
 
-export { Add };
+export { RevokableAgreement };
