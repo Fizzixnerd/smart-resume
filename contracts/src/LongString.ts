@@ -1,14 +1,8 @@
-import {CircuitString, Field, Poseidon, Provable, Character} from "o1js";
+import {CircuitString, Field, Poseidon, Struct, Character} from "o1js";
 
-export class LongString implements Provable<LongString, string> {
-    value: string
-
-    constructor(value: string) {
-        this.value = value;
-    }
-
+export class LongString extends Struct({value: String}) {
     static fromString(x: string): LongString {
-        return new LongString(x);
+        return new LongString({value: x});
     }
 
     static fromCircuitString(x: CircuitString): LongString {
@@ -22,7 +16,7 @@ export class LongString implements Provable<LongString, string> {
     private split(): CircuitString[] {
         let cs = [];
         for (let i = 0; 127 * i < this.value.length; i++) {
-            cs.push(CircuitString.fromString(this.value.substring(127 * i, 127 * (i + 1))))
+            cs.push(CircuitString.fromString(this.value.substring(127 * i, 127 * (i + 1))));
         }
         return cs;
     }
@@ -50,16 +44,16 @@ export class LongString implements Provable<LongString, string> {
     }
 
     public toFields(): Field[] {
-        return this.split().map(CircuitString.toFields).flat();
+        return this.split().map(x => CircuitString.toFields(x)).flat();
     }
 
     public fromFields(fields: Field[]): LongString {
         const strings = LongString.merge(fields);
         let ls = LongString.empty();
         for (const s of strings) {
-            ls = ls.append(LongString.fromCircuitString(s))
+            ls = ls.append(LongString.fromCircuitString(s));
         }
-        return ls
+        return ls;
     }
 
     public toAuxiliary(value?: LongString | undefined): any[] { return []; }

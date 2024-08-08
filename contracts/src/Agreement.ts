@@ -1,7 +1,6 @@
 import { SmartContract, state, State, method, PublicKey, PrivateKey, Bool, Field } from 'o1js';
 import { LongString } from './LongString';
 
-
 /**
  * See https://docs.minaprotocol.com/zkapps for more info.
  * 
@@ -16,10 +15,8 @@ export class RevokableAgreement extends SmartContract {
   @state(PublicKey) claimant = State<PublicKey>();
   @state(PublicKey) signer = State<PublicKey>();
   @state(Field) statementHash = State<Field>();
-  @state(Bool) claimantSigned = State<Bool>();
-  @state(Bool) signerSigned = State<Bool>();
-  @state(Bool) claimantRevoked = State<Bool>();
-  @state(Bool) signerRevoked = State<Bool>();
+  @state(Field) claimantSigned = State<Field>();
+  @state(Field) signerSigned = State<Field>();
 
   constructor(appAddress: PublicKey, claimantAddress: PublicKey, signerAddress: PublicKey, statement: LongString) {
     super(appAddress);
@@ -33,59 +30,53 @@ export class RevokableAgreement extends SmartContract {
     this.claimant.set(this.claimantAddress);
     this.signer.set(this.signerAddress);
     this.statementHash.set(this.statement.hash());
-    this.claimantSigned.set(Bool(false));
-    this.signerSigned.set(Bool(false));
-    this.claimantRevoked.set(Bool(false));
-    this.signerRevoked.set(Bool(false));
+    this.claimantSigned.set(Field(0));
+    this.signerSigned.set(Field(0));
   }
 
   @method async claimantAgree(potentialClaimant: PrivateKey, statement: LongString) {
     const currentSignState = this.claimantSigned.getAndRequireEquals();
     const claimant = this.claimant.getAndRequireEquals();
-    currentSignState.assertFalse();
+    currentSignState.assertEquals(Field(0));
     this.statementHash.getAndRequireEquals().assertEquals(statement.hash())
     // Hasn't been signed yet, so check if we are allowed to sign.
     potentialClaimant.toPublicKey().assertEquals(claimant);
-    this.claimantSigned.set(Bool(true));
+    this.claimantSigned.set(Field(1));
   }
 
   @method async claimantRevoke(potentialClaimant: PrivateKey, statement: LongString) {
     const currentSignState = this.claimantSigned.getAndRequireEquals();
-    const currentRevokedState = this.claimantRevoked.getAndRequireEquals();
     const claimant = this.claimant.getAndRequireEquals();
-    currentSignState.and(currentRevokedState.not()).assertTrue();
+    currentSignState.assertEquals(Field(1));
     this.statementHash.getAndRequireEquals().assertEquals(statement.hash())
     // Hasn't been revoked yet, but has been signed, so check if we are allowed to revoke.
     potentialClaimant.toPublicKey().assertEquals(claimant);
-    this.claimantRevoked.set(Bool(true));
+    this.claimantSigned.set(Field(2))
   }
 
   @method async signerAgree(potentialSigner: PrivateKey, statement: LongString) {
     const currentSignState = this.signerSigned.getAndRequireEquals();
     const signer = this.signer.getAndRequireEquals();
-    currentSignState.assertFalse();
     this.statementHash.getAndRequireEquals().assertEquals(statement.hash())
+    currentSignState.assertEquals(Field(0));
     // Hasn't been signed yet, so check if we are allowed to sign.
     potentialSigner.toPublicKey().assertEquals(signer);
-    this.signerSigned.set(Bool(true));
+    this.signerSigned.set(Field(1));
   }
 
   @method async signerRevoke(potentialSigner: PrivateKey, statement: LongString) {
     const currentSignState = this.signerSigned.getAndRequireEquals();
-    const currentRevokedState = this.signerRevoked.getAndRequireEquals();
     const signer = this.signer.getAndRequireEquals();
-    currentSignState.and(currentRevokedState.not()).assertTrue();
+    currentSignState.assertEquals(Field(1));
     this.statementHash.getAndRequireEquals().assertEquals(statement.hash())
     // Hasn't been revoked yet, but has been signed, so check if we are allowed to revoke.
     potentialSigner.toPublicKey().assertEquals(signer);
-    this.signerRevoked.set(Bool(true));
+    this.signerSigned.set(Field(2));
   }
 
   @method.returns(Bool) async isInEffect(): Promise<Bool> {
-    return this.signerSigned.getAndRequireEquals()
-      .and(this.claimantSigned.getAndRequireEquals())
-      .and(this.claimantRevoked.getAndRequireEquals().not())
-      .and(this.signerRevoked.getAndRequireEquals().not())
+    return this.signerSigned.getAndRequireEquals().equals(Field(1))
+      .and(this.claimantSigned.getAndRequireEquals().equals(Field(1)));
   }
 
   @method.returns(Bool) async isStatement(statement: LongString): Promise<Bool> {

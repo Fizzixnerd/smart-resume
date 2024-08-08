@@ -57,17 +57,14 @@ describe('Agreement', () => {
     const claimant = zkApp.claimant.get()
     const signer = zkApp.signer.get()
     const statementHash = zkApp.statementHash.get();
-    const claimantSigned = zkApp.claimantSigned.get().toBoolean();
-    const signerSigned = zkApp.signerSigned.get().toBoolean();
-    const claimantRevoked = zkApp.claimantRevoked.get().toBoolean();
-    const signerRevoked = zkApp.signerRevoked.get().toBoolean();
+    const claimantSigned = zkApp.claimantSigned.get().equals(Field(0)).toBoolean();
+    const signerSigned = zkApp.signerSigned.get().equals(Field(0)).toBoolean();
     expect(claimant).toEqual(claimantKey.toPublicKey());
     expect(signer).toEqual(signerKey.toPublicKey());
     expect(statementHash).toEqual(LongString.fromString(agreementText).hash());
-    expect(claimantSigned).toBeFalsy();
-    expect(signerSigned).toBeFalsy();
-    expect(claimantRevoked).toBeFalsy();
-    expect(signerRevoked).toBeFalsy();
+    expect(statementHash).not.toEqual(LongString.fromString(agreementText + "!!!").hash());
+    expect(claimantSigned).toBeTruthy();
+    expect(signerSigned).toBeTruthy();
   });
 
   it('correctly updates the signing state on the `RevokableAgreement` smart contract', async () => {
@@ -80,7 +77,7 @@ describe('Agreement', () => {
     await txn.prove();
     await txn.sign([claimantKey]).send();
 
-    const claimantSigned = zkApp.claimantSigned.get().toBoolean();
+    const claimantSigned = zkApp.claimantSigned.get().equals(Field(1)).toBoolean();
     expect(claimantSigned).toBeTruthy();
   });
 });
