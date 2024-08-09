@@ -9,7 +9,7 @@ import { LongString } from './LongString';
  * When the '*Revoke' methods are called, the RevokableAgreement sets the '*revoked' values to true if the agreement has been signed and the party is allowed to revoke.
  */
 export class RevokableAgreement extends SmartContract {
-  claimantAddress : PublicKey;
+  claimantAddress: PublicKey;
   signerAddress: PublicKey;
   statement: LongString;
   @state(PublicKey) claimant = State<PublicKey>();

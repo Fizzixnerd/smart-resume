@@ -3,7 +3,7 @@ import { RevokableAgreement } from './Agreement';
 import { LongString } from './LongString';
 
 // This is the "agreement" between claimant and signer.
-const agreementText = "This statement is false."
+const agreementText = "This statement is false.  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?  Or is it?"
 
 /*
  * This file specifies how to test the `RevokableAgreement` smart contract.
@@ -35,7 +35,6 @@ describe('Agreement', () => {
     deployerKey = deployerAccount.key;
     claimantKey = claimantAccount.key;
     signerKey = signerAccount.key;
-
 
     zkAppPrivateKey = PrivateKey.random();
     zkAppAddress = zkAppPrivateKey.toPublicKey();

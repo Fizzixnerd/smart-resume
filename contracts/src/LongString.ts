@@ -13,14 +13,6 @@ export class LongString extends Struct({value: String}) {
         return LongString.fromString("");
     }
 
-    private split(): CircuitString[] {
-        let cs = [];
-        for (let i = 0; 127 * i < this.value.length; i++) {
-            cs.push(CircuitString.fromString(this.value.substring(127 * i, 127 * (i + 1))));
-        }
-        return cs;
-    }
-
     private static merge(fields: Field[]): CircuitString[] {
         const chars: Character[] = fields.map(field => new Character(field))
         let strings = [];
@@ -39,12 +31,20 @@ export class LongString extends Struct({value: String}) {
         return strings;
     }
 
-    public append(ls: LongString): LongString {
-        return LongString.fromString(this.value + ls.value);
+    public toCircuitStrings(): CircuitString[] {
+        let cs = [];
+        for (let i = 0; 127 * i < this.value.length; i++) {
+            cs.push(CircuitString.fromString(this.value.substring(127 * i, 127 * (i + 1))));
+        }
+        return cs;
+    }
+
+    public append(other: LongString): LongString {
+        return LongString.fromString(this.value + other.value);
     }
 
     public toFields(): Field[] {
-        return this.split().map(x => CircuitString.toFields(x)).flat();
+        return this.toCircuitStrings().flatMap(CircuitString.toFields)
     }
 
     public fromFields(fields: Field[]): LongString {
@@ -56,13 +56,13 @@ export class LongString extends Struct({value: String}) {
         return ls;
     }
 
-    public toAuxiliary(value?: LongString | undefined): any[] { return []; }
+    public toAuxiliary(_value?: LongString | undefined): any[] { return []; }
 
     public sizeInFields(): number {
         return this.value.length;
     }
 
-    public toValue(x: LongString): string {
+    public toValue(_x: LongString): string {
         return this.value;
     }
 
@@ -82,4 +82,3 @@ export class LongString extends Struct({value: String}) {
         return;
     }
 }
-
