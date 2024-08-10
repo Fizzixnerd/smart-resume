@@ -1,25 +1,51 @@
 
-<script>
+<script lang="ts">
   import heroMinaLogo from '$lib/assets/hero-mina-logo.svg'
   import arrowRightSmall from '$lib/assets/arrow-right-small.svg'
   import GradientBG from './GradientBG.svelte'
   import { onMount } from 'svelte'
-  import { Mina, PublicKey } from 'o1js'
+  import { Mina, PrivateKey, AccountUpdate } from 'o1js'
+	import UiResume from '$lib/UiResume.svelte';
+  import { Resume} from '../../../contracts/build/src/';
+  import { RevokableAgreement } from '../../../contracts/build/src/Agreement';
+  import { LongString } from '../../../contracts/build/src/LongString';
 
+  let { promise: zkApp, resolve: resolveZkApp }: PromiseWithResolvers<Resume> = Promise.withResolvers()
   onMount(async () => {
-    const { Add } = await import('../../../contracts/build/src/')
+    const Local = await Mina.LocalBlockchain({ proofsEnabled: false });
+    Mina.setActiveInstance(Local);
+    const [deployerAccount, claimantAccount, signerAccount] = Local.testAccounts;
+    const deployerKey = deployerAccount.key;
+    const claimantKey = claimantAccount.key;
+    const signerKey = signerAccount.key;
 
-    // Update this to use the address (public key) for your zkApp account.
-    // To try it out, you can try this address for an example "Add" smart contract that we've deployed to
-    // Testnet B62qkwohsqTBPsvhYE8cPZSpzJMgoKn4i1LQRuBAtVXWpaT4dgH6WoA .
-    const zkAppAddress = ''
-    // This should be removed once the zkAppAddress is updated.
-    if (!zkAppAddress) {
-      console.error(
-        'The following error is caused because the zkAppAddress has an empty string as the public key. Update the zkAppAddress with the public key for your zkApp account, or try this address for an example "Add" smart contract that we deployed to Testnet: B62qkwohsqTBPsvhYE8cPZSpzJMgoKn4i1LQRuBAtVXWpaT4dgH6WoA',
-      )
-    }
-    //const zkApp = new Add(PublicKey.fromBase58(zkAppAddress))
+    const agreementPrivateKey = PrivateKey.random();
+    const agreementAddress = agreementPrivateKey.toPublicKey();
+
+    const agreement = new RevokableAgreement(agreementAddress, claimantAccount, signerAccount, LongString.fromString("This statement is false!"))
+
+    const resumePrivateKey = PrivateKey.random();
+    const resumeAddress = resumePrivateKey.toPublicKey();
+
+    const resume = new Resume(resumeAddress, [agreement], []);
+
+    const txn = await Mina.transaction(deployerAccount, async () => {
+      await AccountUpdate.fundNewAccount(deployerAccount, 2);
+      await agreement.deploy();
+      await resume.deploy();
+    });
+    await txn.prove();
+    // this tx needs .sign(), because `deploy()` adds an account update that requires signature authorization
+    await txn.sign([deployerKey, agreementPrivateKey, resumePrivateKey]).send();
+    
+    const txn2 = await Mina.transaction(deployerAccount, async () => {
+      await agreement.claimantAgree(claimantKey, agreement.statement);
+      await agreement.signerAgree(signerKey, agreement.statement);
+    });
+    await txn2.prove();
+    await txn2.sign([deployerKey]).send();
+
+    resolveZkApp(resume)
   })
 </script>
 
@@ -28,7 +54,7 @@
 </style>
 
 <svelte:head>
-  <title>Mina zkApp UI</title>
+  <title>Mina zkResume UI</title>
 </svelte:head>
 <GradientBG>
   <main class="main">
@@ -50,6 +76,11 @@
         <code class="code">o1js</code>
       </p>
     </div>
+    {#await zkApp}
+      loading Resume...    
+    {:then zkResume}
+      <UiResume {zkResume}></UiResume>
+    {/await}
     <p class="start">
       Get started by editing
       <code class="code">src/routes/+page.svelte</code>

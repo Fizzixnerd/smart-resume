@@ -21,9 +21,9 @@ export class Resume extends SmartContract {
 
     @method.returns(Bool) async areAllInEffect(): Promise<Bool> {
         return (await Promise.all(this.statements.map(s => s.isInEffect())))
-            .reduce((acc, x) => acc.and(x))
+            .reduce((acc, x) => acc.and(x), Bool(true))
             .and((await Promise.all(this.subsections.map(s => s.areAllInEffect())))
-                .reduce((acc, x) => acc.and(x)));
+                .reduce((acc, x) => acc.and(x), Bool(true)));
     }
 
     @method async assertAreAllInEffect() {

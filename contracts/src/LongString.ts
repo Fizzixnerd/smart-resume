@@ -31,7 +31,7 @@ export class LongString extends Struct({value: String}) {
         return strings;
     }
 
-    public toCircuitStrings(): CircuitString[] {
+    private split(): CircuitString[] {
         let cs = [];
         for (let i = 0; 127 * i < this.value.length; i++) {
             cs.push(CircuitString.fromString(this.value.substring(127 * i, 127 * (i + 1))));
@@ -39,12 +39,12 @@ export class LongString extends Struct({value: String}) {
         return cs;
     }
 
-    public append(other: LongString): LongString {
-        return LongString.fromString(this.value + other.value);
+    public append(ls: LongString): LongString {
+        return LongString.fromString(this.value + ls.value);
     }
 
     public toFields(): Field[] {
-        return this.toCircuitStrings().flatMap(CircuitString.toFields)
+        return this.split().map(x => CircuitString.toFields(x)).flat();
     }
 
     public fromFields(fields: Field[]): LongString {
