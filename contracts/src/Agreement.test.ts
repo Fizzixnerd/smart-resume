@@ -1,5 +1,5 @@
 import { AccountUpdate, Field, Mina, PrivateKey, PublicKey, CircuitString } from 'o1js';
-import { RevokableAgreement } from './Agreement';
+import { RevokableAgreement, Tags } from './Agreement';
 import { LongString } from './LongString';
 
 // This is the "agreement" between claimant and signer.
@@ -22,7 +22,7 @@ describe('Agreement', () => {
     signerKey: PrivateKey,
     zkAppAddress: PublicKey,
     zkAppPrivateKey: PrivateKey,
-    zkApp: RevokableAgreement;
+    zkApp: RevokableAgreement<string>;
 
   beforeAll(async () => {
     if (proofsEnabled) await RevokableAgreement.compile();
@@ -38,7 +38,7 @@ describe('Agreement', () => {
 
     zkAppPrivateKey = PrivateKey.random();
     zkAppAddress = zkAppPrivateKey.toPublicKey();
-    zkApp = new RevokableAgreement(zkAppAddress, claimantAccount, signerAccount, LongString.fromString(agreementText));
+    zkApp = new RevokableAgreement(zkAppAddress, claimantAccount, signerAccount, Field.random(), agreementText, Tags.Text);
   });
 
   async function localDeploy() {
@@ -53,15 +53,15 @@ describe('Agreement', () => {
 
   it('generates and deploys the `RevokableAgreement` smart contract', async () => {
     await localDeploy();
-    const claimant = zkApp.claimant.get()
-    const signer = zkApp.signer.get()
-    const statementHash = zkApp.statementHash.get();
-    const claimantSigned = zkApp.claimantSigned.get().equals(Field(0)).toBoolean();
-    const signerSigned = zkApp.signerSigned.get().equals(Field(0)).toBoolean();
+    const claimant = zkApp.claimant.getAndRequireEquals()
+    const signer = zkApp.signer.getAndRequireEquals()
+    const statementHash = zkApp.statementHash.getAndRequireEquals();
+    const claimantSigned = zkApp.claimantSigned.getAndRequireEquals().equals(Field(0)).toBoolean();
+    const signerSigned = zkApp.signerSigned.getAndRequireEquals().equals(Field(0)).toBoolean();
     expect(claimant).toEqual(claimantKey.toPublicKey());
     expect(signer).toEqual(signerKey.toPublicKey());
-    expect(statementHash).toEqual(LongString.fromString(agreementText).hash());
-    expect(statementHash).not.toEqual(LongString.fromString(agreementText + "!!!").hash());
+    expect(statementHash).toEqual(LongString.fromString(JSON.stringify(agreementText)).hashWithSalt(zkApp.salt));
+    expect(statementHash).not.toEqual(LongString.fromString(JSON.stringify(agreementText + "!!!")).hashWithSalt(zkApp.salt));
     expect(claimantSigned).toBeTruthy();
     expect(signerSigned).toBeTruthy();
   });
@@ -71,7 +71,7 @@ describe('Agreement', () => {
 
     // sign transaction
     const txn = await Mina.transaction(claimantAccount, async () => {
-      await zkApp.claimantAgree(claimantKey, LongString.fromString(agreementText));
+      await zkApp.claimantAgree(claimantKey, zkApp.salt, LongString.fromString(JSON.stringify(zkApp.statement)));
     });
     await txn.prove();
     await txn.sign([claimantKey]).send();

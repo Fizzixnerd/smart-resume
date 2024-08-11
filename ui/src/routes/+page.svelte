@@ -4,12 +4,11 @@
   import arrowRightSmall from '$lib/assets/arrow-right-small.svg'
   import GradientBG from './GradientBG.svelte'
   import { onMount } from 'svelte'
-  import { Mina, PrivateKey, AccountUpdate } from 'o1js'
+  import { Mina, PrivateKey, AccountUpdate, Field } from 'o1js'
 	import UiResume from '$lib/UiResume.svelte';
-  import { Resume} from '../../../contracts/build/src/';
-  import { RevokableAgreement } from '../../../contracts/build/src/Agreement';
-  import { LongString } from '../../../contracts/build/src/LongString';
-
+  import { Resume, type BasicInfo, type WorkHistory } from '../../../contracts/build/src/Resume';
+  import { RevokableAgreement, Tags } from '../../../contracts/build/src/Agreement';
+  
   let { promise: zkApp, resolve: resolveZkApp }: PromiseWithResolvers<Resume> = Promise.withResolvers()
   onMount(async () => {
     const Local = await Mina.LocalBlockchain({ proofsEnabled: false });
@@ -19,31 +18,70 @@
     const claimantKey = claimantAccount.key;
     const signerKey = signerAccount.key;
 
-    const agreementPrivateKey = PrivateKey.random();
-    const agreementAddress = agreementPrivateKey.toPublicKey();
+    const basicInfo = PrivateKey.random();
+    const basicInfoAddress = basicInfo.toPublicKey();
 
-    const agreement = new RevokableAgreement(agreementAddress, claimantAccount, signerAccount, LongString.fromString("This statement is false!"))
+    const workHistory0 = PrivateKey.random();
+    const workHistory0Address = workHistory0.toPublicKey();
 
-    const resumePrivateKey = PrivateKey.random();
-    const resumeAddress = resumePrivateKey.toPublicKey();
+    const basicInfoObject : BasicInfo = {
+      legalName: "Matthew Gordon Douglas Walker",
+      knownAsName: "Matt",
+      gender: "male",
+      address: {
+        streetAddress: "Toronto, Ontario",
+        country: "Canada",
+      },
+      email: "matt.g.d.walker@gmail.com",
+      phoneNumber: "14168854777",
+    }
 
-    const resume = new Resume(resumeAddress, [agreement], []);
+    const workHistory0Object : WorkHistory = {
+      employerLegalName: "O(1) Labs",
+      employerAddress: {
+        streetAddress: "California",
+        country: "USA",
+      },
+      jobs: [
+        {
+          title: "Protocol Engineer",
+          startDate: 2460542,
+          endDate: null,
+          jobDescription: "Working on Protocol Engineering stuff!",
+          skills: ["ocaml", "typescript", "rust", "haskell", "devops"],
+        }
+      ]
+    }
+
+    const basicInfoAgreement: RevokableAgreement<BasicInfo> = new RevokableAgreement(basicInfoAddress, claimantAccount, claimantAccount, Field.random(), basicInfoObject, Tags.BasicInfo);
+    const workHistoryAgreements: RevokableAgreement<WorkHistory>[] = [
+      new RevokableAgreement(workHistory0Address, claimantAccount, signerAccount, Field.random(), workHistory0Object, Tags.WorkHistory)
+    ];
+    const educationAgreements: RevokableAgreement<Education>[] = [
+      new RevokableAgreement(education0Address, claimantAccount, signerAccount, Field.random(), education0Object, Tags.Education)
+    ];
+
+    const resume = new Resume(basicInfoAgreement, workHistoryAgreements, );
 
     const txn = await Mina.transaction(deployerAccount, async () => {
-      await AccountUpdate.fundNewAccount(deployerAccount, 2);
-      await agreement.deploy();
-      await resume.deploy();
+      await AccountUpdate.fundNewAccount(deployerAccount, 1 + workHistoryAgreements.length);
+      await basicInfoAgreement.deploy();
+      for (const agreement of workHistoryAgreements) {
+        await agreement.deploy();
+      }
     });
-    await txn.prove();
     // this tx needs .sign(), because `deploy()` adds an account update that requires signature authorization
-    await txn.sign([deployerKey, agreementPrivateKey, resumePrivateKey]).send();
+    await (await txn.prove()).sign([deployerKey, basicInfo, workHistory0]).send();
     
     const txn2 = await Mina.transaction(deployerAccount, async () => {
-      await agreement.claimantAgree(claimantKey, agreement.statement);
-      await agreement.signerAgree(signerKey, agreement.statement);
+      await basicInfoAgreement.claimantAgree(claimantKey, basicInfoAgreement.salt, basicInfoAgreement.encode());
+      await basicInfoAgreement.signerAgree(claimantKey, basicInfoAgreement.salt, basicInfoAgreement.encode());
+      for (const agreement of workHistoryAgreements) {
+        await agreement.claimantAgree(claimantKey, agreement.salt, agreement.encode());
+        await agreement.signerAgree(signerKey, agreement.salt, agreement.encode());
+      }
     });
-    await txn2.prove();
-    await txn2.sign([deployerKey]).send();
+    await (await txn2.prove()).sign([deployerKey, basicInfo, workHistory0]).send();
 
     resolveZkApp(resume)
   })
@@ -77,7 +115,7 @@
       </p>
     </div>
     {#await zkApp}
-      loading Resume...    
+      loading Resume...
     {:then zkResume}
       <UiResume {zkResume}></UiResume>
     {/await}
