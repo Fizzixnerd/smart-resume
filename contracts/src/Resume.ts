@@ -39,6 +39,7 @@ export type BasicInfo = {
 
 export type Education = {
   institutionLegalName: string;
+  institutionAddress: Address;
   degree: Degree;
   subject: string;
   graduationDate: JulianDay;

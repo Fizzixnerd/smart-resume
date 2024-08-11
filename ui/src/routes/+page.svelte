@@ -6,7 +6,7 @@
   import { onMount } from 'svelte'
   import { Mina, PrivateKey, AccountUpdate, Field } from 'o1js'
 	import UiResume from '$lib/UiResume.svelte';
-  import { Resume, type BasicInfo, type WorkHistory } from '../../../contracts/build/src/Resume';
+  import { Resume, type BasicInfo, type WorkHistory, type Education } from '../../../contracts/build/src/Resume';
   import { RevokableAgreement, Tags } from '../../../contracts/build/src/Agreement';
   
   let { promise: zkApp, resolve: resolveZkApp }: PromiseWithResolvers<Resume> = Promise.withResolvers()
@@ -24,7 +24,10 @@
     const workHistory0 = PrivateKey.random();
     const workHistory0Address = workHistory0.toPublicKey();
 
-    const basicInfoObject : BasicInfo = {
+    const education0 = PrivateKey.random();
+    const education0Address = education0.toPublicKey();
+
+    const basicInfoObject: BasicInfo = {
       legalName: "Matthew Gordon Douglas Walker",
       knownAsName: "Matt",
       gender: "male",
@@ -36,7 +39,7 @@
       phoneNumber: "14168854777",
     }
 
-    const workHistory0Object : WorkHistory = {
+    const workHistory0Object: WorkHistory = {
       employerLegalName: "O(1) Labs",
       employerAddress: {
         streetAddress: "California",
@@ -53,6 +56,18 @@
       ]
     }
 
+    const education0Object: Education = {
+      institutionLegalName: "University of Toronto",
+      institutionAddress: {
+        streetAddress: "Toronto, Ontario",
+        country: "Canada",
+      },
+      degree: "Honours Bachelors of Science",
+      gpa: null,
+      subject: "Mathematics and Physics Specialist",
+      graduationDate: 2458238,
+    } 
+
     const basicInfoAgreement: RevokableAgreement<BasicInfo> = new RevokableAgreement(basicInfoAddress, claimantAccount, claimantAccount, Field.random(), basicInfoObject, Tags.BasicInfo);
     const workHistoryAgreements: RevokableAgreement<WorkHistory>[] = [
       new RevokableAgreement(workHistory0Address, claimantAccount, signerAccount, Field.random(), workHistory0Object, Tags.WorkHistory)
@@ -61,27 +76,37 @@
       new RevokableAgreement(education0Address, claimantAccount, signerAccount, Field.random(), education0Object, Tags.Education)
     ];
 
-    const resume = new Resume(basicInfoAgreement, workHistoryAgreements, );
+    const resume = new Resume(basicInfoAgreement, workHistoryAgreements, educationAgreements);
 
     const txn = await Mina.transaction(deployerAccount, async () => {
-      await AccountUpdate.fundNewAccount(deployerAccount, 1 + workHistoryAgreements.length);
+      await AccountUpdate.fundNewAccount(deployerAccount, 1 + workHistoryAgreements.length + educationAgreements.length);
       await basicInfoAgreement.deploy();
       for (const agreement of workHistoryAgreements) {
         await agreement.deploy();
       }
+      for (const agreement of educationAgreements) {
+        await agreement.deploy();
+      }
     });
     // this tx needs .sign(), because `deploy()` adds an account update that requires signature authorization
-    await (await txn.prove()).sign([deployerKey, basicInfo, workHistory0]).send();
+    await (await txn.prove()).sign([deployerKey, basicInfo, workHistory0, education0]).send();
     
     const txn2 = await Mina.transaction(deployerAccount, async () => {
       await basicInfoAgreement.claimantAgree(claimantKey, basicInfoAgreement.salt, basicInfoAgreement.encode());
       await basicInfoAgreement.signerAgree(claimantKey, basicInfoAgreement.salt, basicInfoAgreement.encode());
+    }).prove().then(x => x.sign([deployerKey, basicInfo]).send())
+
+    const txn3 = await Mina.transaction(deployerAccount, async () => {
       for (const agreement of workHistoryAgreements) {
         await agreement.claimantAgree(claimantKey, agreement.salt, agreement.encode());
         await agreement.signerAgree(signerKey, agreement.salt, agreement.encode());
       }
+      for (const agreement of educationAgreements) {
+        await agreement.claimantAgree(claimantKey, agreement.salt, agreement.encode());
+        await agreement.signerAgree(signerKey, agreement.salt, agreement.encode());
+      }
     });
-    await (await txn2.prove()).sign([deployerKey, basicInfo, workHistory0]).send();
+    await (await txn3.prove()).sign([deployerKey, workHistory0, education0]).send();
 
     resolveZkApp(resume)
   })

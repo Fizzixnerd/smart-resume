@@ -12,6 +12,8 @@
 <h4>Degree</h4>
 {zkRevokableAgreement.statement.degree}
 <h5>{zkRevokableAgreement.statement.subject}</h5>
-<h5>GPA: {zkRevokableAgreement.statement.gpa}</h5>
-<h5>{zkRevokableAgreement.statement.graduationDate}</h5>
+{#if zkRevokableAgreement.statement.gpa}}
+  <h5>GPA: {zkRevokableAgreement.statement.gpa}</h5>
+{/if}
+<h5>Graduated: {zkRevokableAgreement.statement.graduationDate}</h5>
 <UiClaims {zkRevokableAgreement} {isInEffect}></UiClaims>
