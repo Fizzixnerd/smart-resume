@@ -20,24 +20,36 @@
       educationInEffects.update(xs => xs.with(i, inEffect))
     }
   })();
-  
 </script>
 
 <div>
-  <section>
+  <section class="basic-info">
     <h3>Basic Info</h3>
     <UiBasicInfo zkRevokableAgreement={zkResume.basicInfo} isInEffect={$basicInfoInEffect}></UiBasicInfo>
   </section>
-  <section>
+  <section class="work-history">
     <h3>Work History</h3>
     {#each zkResume.workHistory as workHistoryItem, i}
       <UiWorkHistory zkRevokableAgreement={workHistoryItem} isInEffect={$workHistoryInEffects[i]}></UiWorkHistory>
     {/each}
   </section>
-  <section>
+  <section class="education">
     <h3>Education</h3>
     {#each zkResume.education as education, i}
       <UiEducation zkRevokableAgreement={education} isInEffect={$educationInEffects[i]}></UiEducation>
     {/each}
   </section>
 </div>
+
+<style>
+  .basic-info {
+    background: lightblue;
+    border-radius: 3px;
+  }
+  
+  .education {
+    background: lightblue;
+    border-radius: 3px;
+  }
+  
+</style>

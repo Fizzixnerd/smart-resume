@@ -14,7 +14,7 @@ export const Tags = {
  * See https://docs.minaprotocol.com/zkapps for more info.
  * 
  * The `RevokableAgreement` contract represents an agreement on a `statement` between two parties when deployed.  This agreement can be revoked by either party at any time.
- * When the '*Agree' methods are called, the RevokableAgreement sets the '*signed' values to 'Field(1)' if the party is allowed to sign.
+ * When the '*Agree' methods are called, the RevokableAgreement sets the '*signed' values to 'Field(1)' if the agreement is unsigned and the party is allowed to sign.
  * When the '*Revoke' methods are called, the RevokableAgreement sets the '*signed' values to 'Field(2)' if the agreement has been signed and the party is allowed to revoke.
  */
 export class RevokableAgreement<T> extends SmartContract {
@@ -40,6 +40,9 @@ export class RevokableAgreement<T> extends SmartContract {
   }
 
   init() {
+    // This is apparently necessary to prevent init from being run again!
+    this.account.provedState.getAndRequireEquals().assertFalse();
+
     super.init();
     this.claimant.set(this.claimantAddress);
     this.signer.set(this.signerAddress);
@@ -50,6 +53,7 @@ export class RevokableAgreement<T> extends SmartContract {
   }
 
   @method async claimantAgree(potentialClaimant: PrivateKey, salt: Field, statement: LongString) {
+    this.account.provedState.getAndRequireEquals().assertTrue();
     const currentSignState = this.claimantSigned.getAndRequireEquals();
     const claimant = this.claimant.getAndRequireEquals();
     currentSignState.assertEquals(Field(0));
@@ -60,6 +64,8 @@ export class RevokableAgreement<T> extends SmartContract {
   }
 
   @method async claimantRevoke(potentialClaimant: PrivateKey, salt: Field, statement: LongString) {
+    this.account.provedState.getAndRequireEquals().assertTrue();
+
     const currentSignState = this.claimantSigned.getAndRequireEquals();
     const claimant = this.claimant.getAndRequireEquals();
     currentSignState.assertEquals(Field(1));
@@ -70,6 +76,8 @@ export class RevokableAgreement<T> extends SmartContract {
   }
 
   @method async signerAgree(potentialSigner: PrivateKey, salt: Field, statement: LongString) {
+    this.account.provedState.getAndRequireEquals().assertTrue();
+
     const currentSignState = this.signerSigned.getAndRequireEquals();
     const signer = this.signer.getAndRequireEquals();
     this.statementHash.getAndRequireEquals().assertEquals(statement.hashWithSalt(salt))
@@ -80,6 +88,8 @@ export class RevokableAgreement<T> extends SmartContract {
   }
 
   @method async signerRevoke(potentialSigner: PrivateKey, salt: Field, statement: LongString) {
+    this.account.provedState.getAndRequireEquals().assertTrue();
+
     const currentSignState = this.signerSigned.getAndRequireEquals();
     const signer = this.signer.getAndRequireEquals();
     currentSignState.assertEquals(Field(1));
@@ -90,11 +100,15 @@ export class RevokableAgreement<T> extends SmartContract {
   }
 
   @method.returns(Bool) async isInEffect(): Promise<Bool> {
+    this.account.provedState.getAndRequireEquals().assertTrue();
+
     return this.signerSigned.getAndRequireEquals().equals(Field(1))
       .and(this.claimantSigned.getAndRequireEquals().equals(Field(1)));
   }
 
-  @method.returns(Bool) async isStatement(statement: LongString, salt: Field): Promise<Bool> {
+  @method.returns(Bool) async isStatement(salt: Field, statement: LongString): Promise<Bool> {
+    this.account.provedState.getAndRequireEquals().assertTrue();
+    
     return this.statementHash.getAndRequireEquals().equals(statement.hashWithSalt(salt))
   }
 

@@ -20,14 +20,6 @@ export type Address = {
   country: Country;
 }
 
-export type Job = {
-  title: string;
-  startDate: JulianDay;
-  endDate: JulianDay | null | undefined;
-  jobDescription: string;
-  skills: string[];
-}
-
 export type BasicInfo = {
   legalName: string;
   knownAsName: string;
@@ -50,6 +42,14 @@ export type WorkHistory = {
   employerLegalName: string;
   employerAddress: Address;
   jobs: Job[]
+}
+
+export type Job = {
+  title: string;
+  startDate: JulianDay;
+  endDate: JulianDay | null | undefined;
+  jobDescription: string;
+  skills: string[];
 }
 
 export class Resume {

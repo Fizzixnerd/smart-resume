@@ -7,17 +7,16 @@
   export let isInEffect: boolean | undefined;
 </script>
 
-<div>
-  <h4>Employer Legal Name</h4>
-  {zkRevokableAgreement.statement.employerLegalName}
-  {#each zkRevokableAgreement.statement.jobs as job}
-    <h5>{job.title}</h5>
-    {job.startDate} - {job.endDate || ""}<br>
-    {job.jobDescription}
-    <h5>Skills:</h5>
-    {#each job.skills as skill}
-      {skill + " "} 
-    {/each}
-  {/each}<br>
-  <UiClaims {zkRevokableAgreement} {isInEffect}></UiClaims>
-</div>
+<h4>Employer Legal Name</h4>
+{zkRevokableAgreement.statement.employerLegalName}<br>
+{zkRevokableAgreement.statement.employerAddress.streetAddress}, {zkRevokableAgreement.statement.employerAddress.country}
+{#each zkRevokableAgreement.statement.jobs as job}
+  <h5>{job.title}</h5>
+  {job.startDate} - {job.endDate || "present"}<br>
+  {job.jobDescription}
+  <h5>Skills:</h5>
+  {#each job.skills as skill}
+    {skill + " "} 
+  {/each}
+{/each}<br>
+<UiClaims {zkRevokableAgreement} {isInEffect}></UiClaims>
